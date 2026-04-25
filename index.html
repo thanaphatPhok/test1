@@ -9,9 +9,6 @@
     .container { max-width: 900px; margin: auto; padding: 20px; }
     .card { background: #1c1c1f; padding: 20px; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.4); margin-bottom: 20px; }
 
-    .job-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; }
-    .job-info { flex: 1; }
-    .job-logo { width: 80px; }
     .job-image { width: 100%; max-width: 200px; border-radius: 10px; margin-top:10px; cursor:pointer; }
 
     .image-modal { position: fixed; inset:0; background: rgba(0,0,0,0); display:flex; justify-content:center; align-items:center; opacity:0; pointer-events:none; transition:.3s; }
@@ -33,6 +30,14 @@
     .modal-box { background:#1c1c1f; padding:20px; border-radius:15px; width:300px; }
 
     .switch { text-align:center; margin-top:10px; cursor:pointer; color:#aaa; }
+
+    .details-box {
+      margin-top:10px;
+      padding:10px;
+      background:#111;
+      border-radius:10px;
+      color:#ccc;
+    }
   </style>
 </head>
 <body>
@@ -40,7 +45,6 @@
 <button id="adminBtn" class="admin-btn" onclick="openAdminModal()" style="display:none;">🔐</button>
 
 <div class="container">
-  <div style="text-align:center;"><img src="https://img2.pic.in.th/White-Illustrative-Photography-Logo.png" width="140"></div>
   <h1 style="text-align:center;">📸 ระบบจองคิวถ่ายภาพ</h1>
 
   <div class="card" id="loginBox">
@@ -104,12 +108,11 @@ function register(){
   const pass2=document.getElementById('regPass2').value;
 
   if(!name||!email||!pass||!pass2){
-    alert('การสมัครสมาชิคไม่สำเร็จ: กรุณากรอกข้อมูลให้ครบ');
+    alert('กรอกข้อมูลให้ครบ');
     return;
   }
-
   if(pass!==pass2){
-    alert('การสมัครสมาชิคไม่สำเร็จ: รหัสผ่านไม่ตรงกัน');
+    alert('รหัสผ่านไม่ตรงกัน');
     return;
   }
 
@@ -131,20 +134,20 @@ function login(){
 
   currentUser=email;
   localStorage.setItem('user',email);
-  document.getElementById('loginBox').style.display='none';
-  document.getElementById('app').style.display='block';
-  document.getElementById('adminBtn').style.display='flex';
+  loginBox.style.display='none';
+  app.style.display='block';
+  adminBtn.style.display='flex';
   loadData();
 }
 
 function toggleForm(isRegister){
-  document.getElementById('loginForm').style.display=isRegister?'none':'block';
-  document.getElementById('registerForm').style.display=isRegister?'block':'none';
-  document.getElementById('formTitle').innerText=isRegister?'สมัครสมาชิก':'เข้าสู่ระบบ';
+  loginForm.style.display=isRegister?'none':'block';
+  registerForm.style.display=isRegister?'block':'none';
+  formTitle.innerText=isRegister?'สมัครสมาชิก':'เข้าสู่ระบบ';
 }
 
 // image preview
-document.getElementById('image').onchange=e=>{
+image.onchange=e=>{
   const f=e.target.files[0];
   if(!f) return;
   const r=new FileReader();
@@ -152,17 +155,18 @@ document.getElementById('image').onchange=e=>{
   r.readAsDataURL(f);
 }
 
+// submit
 function submitForm(){
   let data=JSON.parse(localStorage.getItem('jobs')||'[]');
   if(data.find(j=>j.user===currentUser)) return alert('ส่งแล้ว');
 
   const job={
     user:currentUser,
-    name: document.getElementById('name').value,
-    type: document.getElementById('type').value,
-    schedule: document.getElementById('schedule').value,
-    details: document.getElementById('details').value,
-    contact: document.getElementById('contact').value,
+    name:name.value,
+    type:type.value,
+    schedule:schedule.value,
+    details:details.value,
+    contact:contact.value,
     image:imageBase64,
     status:'pending'
   };
@@ -172,6 +176,7 @@ function submitForm(){
   loadData();
 }
 
+// load
 function loadData(){
   let data=JSON.parse(localStorage.getItem('jobs')||'[]');
   list.innerHTML='';
@@ -185,8 +190,19 @@ function loadData(){
       ${job.type}<br>
       ${job.schedule}<br>
       ${job.contact}<br>
+
       ${job.image?`<img src="${job.image}" class="job-image" onclick="openImage(this.src)">`:''}
-      <div><span class="status ${job.status==='done'?'done':'pending'}">${job.status==='done'?'เสร็จแล้ว':'กำลังทำ'}</span></div>
+
+      <button onclick="toggleDetails(${i})">📄 ดูรายละเอียด</button>
+      <div id="details-${i}" class="details-box" style="display:none;">
+        ${job.details || '-'}
+      </div>
+
+      <div>
+        <span class="status ${job.status==='done'?'done':'pending'}">
+          ${job.status==='done'?'เสร็จแล้ว':'กำลังทำ'}
+        </span>
+      </div>
     `;
 
     if(adminMode){
@@ -207,19 +223,31 @@ function loadData(){
   });
 }
 
-function openImage(src){fullImage.src=src;imageModal.classList.add('show');}
+function toggleDetails(i){
+  const el=document.getElementById(`details-${i}`);
+  el.style.display = el.style.display==='none'?'block':'none';
+}
 
+function openImage(src){fullImage.src=src;imageModal.classList.add('show');}
 function openAdminModal(){adminModal.style.display='flex';}
-function confirmAdmin(){if(adminPinInput.value!==adminPin)return alert('ผิด');adminMode=true;adminModal.style.display='none';loadData();}
+function confirmAdmin(){
+  if(adminPinInput.value!==adminPin) return alert('ผิด');
+  adminMode=true;
+  adminModal.style.display='none';
+  loadData();
+}
 
 window.onload=()=>{
   let saved=localStorage.getItem('user');
-  if(saved){currentUser=saved;loginBox.style.display='none';app.style.display='block';adminBtn.style.display='flex';}
+  if(saved){
+    currentUser=saved;
+    loginBox.style.display='none';
+    app.style.display='block';
+    adminBtn.style.display='flex';
+  }
   loadData();
 }
 </script>
 
 </body>
 </html>
-
-
